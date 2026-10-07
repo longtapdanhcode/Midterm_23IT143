@@ -1,0 +1,366 @@
+<!-- ==================== BANNER KIẾN TRÚC HỆ THỐNG CLOUD ==================== -->
+<div class="row mb-4">
+  <div class="col-12">
+    <div class="p-3 bg-white border rounded-4 shadow-sm d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+      <div class="d-flex align-items-center gap-3">
+        <div class="bg-primary-subtle text-primary p-2 rounded-3 fs-4 d-flex align-items-center justify-content-center" style="width: 44px; height: 44px;">
+          <i class="bi bi-hdd-network"></i>
+        </div>
+        <div>
+          <div class="fw-bold text-dark">Kiến Trúc Cloud Đa Luồng &amp; Stateless MongoStore</div>
+          <div class="text-secondary small">
+            Phân tách độc lập luồng Đọc (<code class="text-primary">ReadBook.find()</code>) &amp; luồng Ghi (<code class="text-success">WriteBook.save()</code>) trên MongoDB Atlas.
+          </div>
+        </div>
+      </div>
+      <div class="d-flex flex-wrap gap-2">
+        <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 rounded-pill d-inline-flex align-items-center gap-1">
+          <i class="bi bi-arrow-down-left-circle-fill"></i> Read Stream
+        </span>
+        <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2 rounded-pill d-inline-flex align-items-center gap-1">
+          <i class="bi bi-arrow-up-right-circle-fill"></i> Write Stream
+        </span>
+        <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-3 py-2 rounded-pill d-inline-flex align-items-center gap-1">
+          <i class="bi bi-database-check"></i> Session: MongoStore
+        </span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== THÔNG BÁO FLASH MESSAGE ==================== -->
+{{#if flash}}
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="alert alert-{{flash.type}} alert-dismissible fade show border-0 shadow-sm rounded-4 d-flex align-items-center p-3 mb-0" role="alert">
+        {{#if (eq flash.type 'success')}}
+          <div class="bg-success text-white rounded-circle p-2 me-3 d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+            <i class="bi bi-check-lg fs-5"></i>
+          </div>
+        {{else}}
+          <div class="bg-danger text-white rounded-circle p-2 me-3 d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+            <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+          </div>
+        {{/if}}
+        <div class="flex-grow-1">
+          <div class="fw-bold">{{#if (eq flash.type 'success')}}Thực Hiện Thành Công!{{else}}Yêu Cầu Bị Từ Chối!{{/if}}</div>
+          <div class="small">{{flash.message}}</div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    </div>
+  </div>
+{{/if}}
+
+<!-- ==================== 3 THẺ TÓM TẮT THỐNG KÊ (KPI METRICS) ==================== -->
+<div class="row g-3 mb-4">
+  <!-- Thẻ 1: Tổng số sách -->
+  <div class="col-12 col-md-4">
+    <div class="metric-card">
+      <div class="metric-icon-box bg-primary-subtle text-primary">
+        <i class="bi bi-book-half"></i>
+      </div>
+      <div>
+        <div class="text-uppercase text-secondary fw-semibold small" style="font-size: 0.72rem; letter-spacing: 0.05em;">Tổng Sách Trong DB</div>
+        <div class="fs-4 fw-bold text-dark lh-1 my-1">
+          <span id="kpiTotalCount">{{books.length}}</span> <small class="fs-6 fw-normal text-muted">cuốn</small>
+        </div>
+        <div class="small text-muted" style="font-size: 0.75rem;">Truy vấn từ luồng Đọc</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Thẻ 2: Tiền tố hợp lệ -->
+  <div class="col-12 col-md-4">
+    <div class="metric-card">
+      <div class="metric-icon-box bg-success-subtle text-success">
+        <i class="bi bi-shield-lock-fill"></i>
+      </div>
+      <div>
+        <div class="text-uppercase text-secondary fw-semibold small" style="font-size: 0.72rem; letter-spacing: 0.05em;">Tiền Tố Hợp Lệ</div>
+        <div class="fs-4 fw-bold text-success lh-1 my-1 font-monospace">
+          {{studentInfo.codePrefixRequired}}
+        </div>
+        <div class="small text-muted" style="font-size: 0.75rem;">3 ký tự cuối MSSV ({{studentInfo.mssv}})</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Thẻ 3: Thuế suất động -->
+  <div class="col-12 col-md-4">
+    <div class="metric-card">
+      <div class="metric-icon-box bg-danger-subtle text-danger">
+        <i class="bi bi-percent"></i>
+      </div>
+      <div>
+        <div class="text-uppercase text-secondary fw-semibold small" style="font-size: 0.72rem; letter-spacing: 0.05em;">Thuế Suất Động VAT</div>
+        <div class="fs-4 fw-bold text-danger lh-1 my-1">
+          {{studentInfo.vatRate}}%
+        </div>
+        <div class="small text-muted" style="font-size: 0.75rem;">Công thức: ({{studentInfo.lastDigitMssv}} + 4)% mới</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== MAIN CONTENT: 2 CỘT ==================== -->
+<div class="row g-4">
+  
+  <!-- CỘT 1: FORM THÊM SÁCH (WRITE STREAM) -->
+  <div class="col-lg-4">
+    <div class="dashboard-card rounded-4 p-4 shadow-sm border">
+      <!-- Card Header -->
+      <div class="d-flex align-items-center justify-content-between pb-3 mb-3 border-bottom">
+        <div class="d-flex align-items-center gap-2">
+          <div class="bg-primary text-white rounded-3 p-2 d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+            <i class="bi bi-plus-circle-fill"></i>
+          </div>
+          <div>
+            <h5 class="fw-bold mb-0 text-dark">Thêm Sách Mới</h5>
+            <small class="text-muted" style="font-size: 0.75rem;">Lưu qua WriteConnection</small>
+          </div>
+        </div>
+        <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill">Luồng Ghi</span>
+      </div>
+
+      <!-- Form Action -->
+      <form action="/books" method="POST" id="addBookForm">
+        <!-- Mã sách -->
+        <div class="mb-3">
+          <label for="code" class="form-label fw-semibold text-dark small mb-1">
+            Mã Sách <span class="text-danger">*</span>
+          </label>
+          <div class="input-group">
+            <span class="input-group-text bg-light border-end-0 text-muted">
+              <i class="bi bi-upc-scan"></i>
+            </span>
+            <input 
+              type="text" 
+              class="form-control border-start-0 ps-1 font-monospace" 
+              id="code" 
+              name="code" 
+              placeholder="VD: 143-NODEJS, 143_DOCKER" 
+              value="{{studentInfo.codePrefixRequired}}-"
+              required
+            >
+          </div>
+          <div class="form-text text-danger small mt-1 d-flex align-items-center gap-1" style="font-size: 0.75rem;">
+            <i class="bi bi-info-circle-fill"></i> Bắt buộc bắt đầu bằng tiền tố <strong>"{{studentInfo.codePrefixRequired}}"</strong>.
+          </div>
+        </div>
+
+        <!-- Tên sách -->
+        <div class="mb-3">
+          <label for="title" class="form-label fw-semibold text-dark small mb-1">
+            Tên Sách <span class="text-danger">*</span>
+          </label>
+          <div class="input-group">
+            <span class="input-group-text bg-light border-end-0 text-muted">
+              <i class="bi bi-journal-text"></i>
+            </span>
+            <input 
+              type="text" 
+              class="form-control border-start-0 ps-1" 
+              id="title" 
+              name="title" 
+              placeholder="VD: Thiết Kế Hệ Thống Phân Tán" 
+              required
+            >
+          </div>
+        </div>
+
+        <!-- Giá gốc -->
+        <div class="mb-3">
+          <label for="basePrice" class="form-label fw-semibold text-dark small mb-1">
+            Giá Gốc (VNĐ) <span class="text-danger">*</span>
+          </label>
+          <div class="input-group">
+            <span class="input-group-text bg-light border-end-0 text-muted">
+              <i class="bi bi-cash-stack"></i>
+            </span>
+            <input 
+              type="number" 
+              class="form-control border-start-0 border-end-0 ps-1" 
+              id="basePrice" 
+              name="basePrice" 
+              min="1000" 
+              step="500" 
+              placeholder="VD: 150000" 
+              required
+            >
+            <span class="input-group-text bg-light border-start-0 fw-semibold text-secondary">₫</span>
+          </div>
+          <div class="form-text text-muted small" style="font-size: 0.75rem;">
+            Đơn vị tiền tệ: VNĐ (lớn hơn 0).
+          </div>
+        </div>
+
+        <!-- Card Tính Toán & Xem Trước Giá Sau Thuế (Real-time Preview) -->
+        <div class="mb-4 p-3 bg-light-subtle rounded-3 border border-dashed">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="small text-secondary fw-semibold">
+              <i class="bi bi-calculator me-1"></i> Mức thuế VAT áp dụng:
+            </span>
+            <span class="badge bg-danger text-white rounded-pill px-2 py-1 fw-bold">
+              7% (3 + 4)%
+            </span>
+          </div>
+
+          <div class="p-2 bg-white rounded-2 border d-flex justify-content-between align-items-center">
+            <span class="small text-muted">Giá sau thuế dự kiến:</span>
+            <span class="fw-bold text-success fs-5 font-monospace" id="previewFinalPrice">
+              0 ₫
+            </span>
+          </div>
+
+          <div class="mt-2 text-muted small d-flex align-items-center gap-1" style="font-size: 0.72rem;">
+            <i class="bi bi-lightning-charge-fill text-warning"></i>
+            <span>Công thức: <code class="text-dark">finalPrice = basePrice &times; (1 + 7/100)</code></span>
+          </div>
+        </div>
+
+        <!-- Nút Submit -->
+        <button type="submit" class="btn btn-primary w-100 py-2 rounded-3 fw-semibold shadow-sm d-flex align-items-center justify-content-center gap-2">
+          <i class="bi bi-cloud-arrow-up-fill fs-5"></i>
+          <span>Lưu Sách Vào Database</span>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- CỘT 2: BẢNG DANH SÁCH SÁCH (READ STREAM) -->
+  <div class="col-lg-8">
+    <div class="dashboard-card rounded-4 p-4 shadow-sm border">
+      <!-- Card Header -->
+      <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center pb-3 mb-3 border-bottom gap-2">
+        <div class="d-flex align-items-center gap-2">
+          <div class="bg-success-subtle text-success rounded-3 p-2 d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+            <i class="bi bi-table"></i>
+          </div>
+          <div>
+            <h5 class="fw-bold mb-0 text-dark">Danh Sách Sách Trong Hệ Thống</h5>
+            <small class="text-muted" style="font-size: 0.75rem;">Truy vấn trực tiếp qua ReadConnection</small>
+          </div>
+        </div>
+        <div>
+          <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-1">
+            <i class="bi bi-database-check me-1"></i> ReadBook (MONGO_URI_READ)
+          </span>
+        </div>
+      </div>
+
+      <!-- Bảng Sách hoặc Empty State -->
+      {{#if books.length}}
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light text-secondary">
+              <tr class="text-uppercase small" style="font-size: 0.75rem; letter-spacing: 0.04em;">
+                <th scope="col" style="width: 5%;">#</th>
+                <th scope="col" style="width: 18%;">Mã Sách</th>
+                <th scope="col" style="width: 28%;">Tên Sách</th>
+                <th scope="col" class="text-end" style="width: 15%;">Giá Gốc</th>
+                <th scope="col" class="text-center" style="width: 10%;">Thuế</th>
+                <th scope="col" class="text-end" style="width: 16%;">Giá Sau Thuế</th>
+                <th scope="col" class="text-center" style="width: 8%;">Chi Tiết</th>
+              </tr>
+            </thead>
+            <tbody>
+              {{#each books}}
+                <tr>
+                  <!-- STT -->
+                  <td class="text-muted small fw-semibold">{{addOne @index}}</td>
+                  
+                  <!-- Mã sách (Badge phong cách Code) -->
+                  <td>
+                    <span class="badge bg-dark-subtle text-dark border font-monospace px-2 py-1 rounded-2">
+                      <i class="bi bi-tag-fill me-1 text-primary"></i>{{this.code}}
+                    </span>
+                  </td>
+
+                  <!-- Tên sách -->
+                  <td>
+                    <div class="fw-semibold text-dark text-truncate" style="max-width: 220px;" title="{{this.title}}">
+                      {{this.title}}
+                    </div>
+                    <div class="small text-muted" style="font-size: 0.72rem;">
+                      {{formatDate this.createdAt}}
+                    </div>
+                  </td>
+
+                  <!-- Giá gốc -->
+                  <td class="text-end font-monospace text-secondary">
+                    {{formatVND this.basePrice}}
+                  </td>
+
+                  <!-- Thuế VAT -->
+                  <td class="text-center">
+                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill fw-semibold">
+                      {{this.vatRate}}%
+                    </span>
+                  </td>
+
+                  <!-- Giá sau thuế (Highlight nổi bật) -->
+                  <td class="text-end">
+                    <span class="fw-bold text-success font-monospace fs-6">
+                      {{formatVND this.finalPrice}}
+                    </span>
+                  </td>
+
+                  <!-- Status Icon -->
+                  <td class="text-center text-muted">
+                    <span class="badge bg-light text-secondary border rounded-circle p-1" title="Đã đồng bộ Replica Set">
+                      <i class="bi bi-check2 text-success"></i>
+                    </span>
+                  </td>
+                </tr>
+              {{/each}}
+            </tbody>
+          </table>
+        </div>
+      {{else}}
+        <!-- Empty State sang trọng -->
+        <div class="text-center py-5">
+          <div class="mb-3 d-inline-flex align-items-center justify-content-center bg-light text-secondary rounded-circle" style="width: 80px; height: 80px;">
+            <i class="bi bi-journal-x fs-1 text-muted"></i>
+          </div>
+          <h6 class="fw-bold text-dark mb-1">Chưa Có Đầu Sách Nào Trong Cơ Sở Dữ Liệu</h6>
+          <p class="text-muted small mb-3" style="max-width: 360px; margin: 0 auto;">
+            Hệ thống đang sẵn sàng. Hãy sử dụng form bên trái để thêm cuốn sách đầu tiên với tiền tố <span class="badge bg-dark-subtle text-dark font-monospace">143</span>.
+          </p>
+          <span class="badge bg-primary-subtle text-primary border px-3 py-2 rounded-pill small">
+            <i class="bi bi-cloud-check me-1"></i> MongoDB Atlas Cluster Connected
+          </span>
+        </div>
+      {{/if}}
+    </div>
+  </div>
+
+</div>
+
+<!-- ==================== REAL-TIME PREVIEW SCRIPT ==================== -->
+<script>
+  (function () {
+    const basePriceInput = document.getElementById('basePrice');
+    const previewFinalPrice = document.getElementById('previewFinalPrice');
+    const VAT_RATE = 0.07; // 7% theo công thức mới (3 + 4)%
+
+    function updatePreview() {
+      const val = parseFloat(basePriceInput.value);
+      if (!isNaN(val) && val > 0) {
+        // finalPrice = Math.round(basePrice * (1 + 7 / 100))
+        const finalVal = Math.round(val * (1 + VAT_RATE));
+        previewFinalPrice.textContent = new Intl.NumberFormat('vi-VN', {
+          style: 'currency',
+          currency: 'VND',
+        }).format(finalVal);
+      } else {
+        previewFinalPrice.textContent = '0 ₫';
+      }
+    }
+
+    if (basePriceInput && previewFinalPrice) {
+      basePriceInput.addEventListener('input', updatePreview);
+      basePriceInput.addEventListener('change', updatePreview);
+    }
+  })();
+</script>
