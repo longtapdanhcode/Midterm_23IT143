@@ -1,0 +1,27 @@
+{
+  "name": "midterm-23it143-book-management",
+  "version": "1.0.0",
+  "description": "Ung dung Quan ly Sach - Kiem tra giua ky - Le Bao Long 23IT143",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "dev": "node --watch app.js"
+  },
+  "keywords": [
+    "express",
+    "mongoose",
+    "multi-connection",
+    "stateless-session",
+    "handlebars"
+  ],
+  "author": "Le Bao Long - 23IT143",
+  "license": "ISC",
+  "dependencies": {
+    "connect-mongo": "^5.1.0",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "express-handlebars": "^8.0.1",
+    "express-session": "^1.18.1",
+    "mongoose": "^8.10.1"
+  }
+}
